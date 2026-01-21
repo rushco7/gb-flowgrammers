@@ -1,0 +1,1707 @@
+{
+  "name": "📊[Nome do Cliente][Facebook ADS] - Ranking de Criativos: Análise Detalhada [Copy, Títulos]",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        -4864,
+        832
+      ],
+      "id": "18f9984e-282b-4560-94d3-e7f0775a9096",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v19.0",
+        "node": "={{ $json.ad_id }}",
+        "edge": "adcreatives",
+        "options": {
+          "fields": {
+            "field": [
+              {
+                "name": "body,title,object_story_spec,thumbnail_url,status,instagram_actor_id,call_to_action_type"
+              },
+              {
+                "name": "effective_object_story_id"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        -3760,
+        608
+      ],
+      "id": "76d8ba9e-64f5-4700-af15-e24bcf8f60da",
+      "name": "Get: Detalhes do Anúncio",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "",
+          "name": "[Facebook Graph] - Token System"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "dataType": "string",
+        "value1": "={{ $json.object_story_spec?.video_data?.video_id }}",
+        "rules": {
+          "rules": [
+            {
+              "value2": "undefined",
+              "output": 0
+            },
+            {
+              "operation": "notEqual",
+              "value2": "undefined",
+              "output": 3
+            },
+            {
+              "operation": "notEqual",
+              "value2": 1,
+              "output": 1
+            },
+            {
+              "operation": "notEqual",
+              "value2": 2,
+              "output": 2
+            },
+            {
+              "operation": "notEqual",
+              "value2": 3,
+              "output": 4
+            }
+          ]
+        },
+        "fallbackOutput": 5
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 1,
+      "position": [
+        -3568,
+        608
+      ],
+      "id": "e4922681-37f2-4914-9980-87037f763f35",
+      "name": "Tipo"
+    },
+    {
+      "parameters": {
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "Analise a imagem deste anúncio de forma resumida e objetiva."
+            },
+            {
+              "content": "Analisar imagem: {{ $json.image_url }}"
+            }
+          ]
+        },
+        "model": "gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        -3072,
+        432
+      ],
+      "id": "7209930f-b44e-4f36-9b5a-2cb7aa64e1c7",
+      "name": "Análise de Imagem URL",
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "prompt": {
+          "messages": [
+            {
+              "role": "system",
+              "content": "Analise a imagem deste criativo."
+            },
+            {
+              "content": "Analisar imagem: {{ $json.image_url }}"
+            }
+          ]
+        },
+        "model": "gpt-4o-mini",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        -3072,
+        640
+      ],
+      "id": "f516a75a-a43b-4ca0-94cb-3d5f4705a6ef",
+      "name": "Análise de Imagem",
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "audioTranscription",
+        "audio": "data",
+        "options": {
+          "language": "pt"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.4,
+      "position": [
+        -2768,
+        784
+      ],
+      "id": "8c592186-21b9-4a97-90c7-d8616223528b",
+      "name": "Transcrever",
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI Account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v19.0",
+        "node": "={{ $json.object_story_spec.video_data.video_id }}",
+        "options": {
+          "fields": {
+            "field": [
+              {
+                "name": "source"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        -3344,
+        800
+      ],
+      "id": "19bfa669-7bd0-4b2a-a92c-567e914cb75d",
+      "name": "Instagram: Get Reels",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "",
+          "name": "[Facebook Graph] - Token System"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.source }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -3104,
+        800
+      ],
+      "id": "b11a5857-c533-4f9e-a0e4-54608c02c6b4",
+      "name": "Download Video"
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v19.0",
+        "node": "={{ $json.effective_object_story_id }}",
+        "options": {
+          "fields": {
+            "field": [
+              {
+                "name": "full_picture"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        -3360,
+        -64
+      ],
+      "id": "e6bd18d0-994c-42cb-b7f9-2c5e53610931",
+      "name": "Get Ad Image (via Hash)",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "",
+          "name": "[Facebook Graph] - Token System"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v19.0",
+        "node": "={{ $json.object_story_spec.link_data.image_hash }}",
+        "options": {
+          "fields": {
+            "field": [
+              {
+                "name": "images"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        -3344,
+        608
+      ],
+      "id": "ad9f48ac-330f-48d0-8f69-72bb582c6451",
+      "name": "Instagram: Get Media",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "",
+          "name": "[Facebook Graph] - Token System"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return { ...$input.item.json, transcription: \"Tipo de criativo não suportado para análise automática.\" };"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2768,
+        1008
+      ],
+      "id": "843f5507-6f60-4c4f-9da8-ef12a3219f56",
+      "name": "Other"
+    },
+    {
+      "parameters": {
+        "jsCode": "const item = $input.item.json;\nconst adDetails = $('Get: Detalhes do Anúncio').item.json || {};\nconst analysis = $('Análise de Imagem').item.json?.usage ? $('Análise de Imagem').item.json.message.content : null;\nconst transcription = $('Transcrever').item.json?.text || null;\nconst other = $('Other').item.json?.transcription || null;\n\nreturn {\n  tipo_criativo: adDetails.object_story_spec?.video_data ? \"Video\" : \"Imagem\",\n  creative_title: adDetails.title || \"\",\n  creative_body: adDetails.body || \"\",\n  description: adDetails.link_data?.message || \"\",\n  cta_type: adDetails.call_to_action_type || \"\",\n  url_cta: adDetails.object_story_spec?.link_data?.link || \"\",\n  url_media: adDetails.image_url || adDetails.thumbnail_url || \"\",\n  url_instagram: adDetails.instagram_permalink_url || \"\",\n  status: adDetails.status,\n  created_time: new Date().toISOString(),\n  transcription_or_analysis: transcription || analysis || other || \"Sem análise\",\n  ...item\n};"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2528,
+        608
+      ],
+      "id": "c8691522-8350-488f-8461-1e96a2e411b0",
+      "name": "Mapping"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $node[\"Data\"].json[\"ID Sheets Ranking de Criativos\"] }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{SHEET_ID_TOP}}",
+          "mode": "list",
+          "cachedResultName": "Top",
+          "cachedResultUrl": ""
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -4368,
+        688
+      ],
+      "id": "670c538a-028c-4ae0-a889-c454722d2509",
+      "name": "Outliers Positivos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "[Google Sheets] - Aiosphere"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -3920,
+        432
+      ],
+      "id": "60d0322c-a070-4bc2-8954-526487e47a96",
+      "name": "Outliers + 1x1"
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $node[\"Data\"].json[\"ID Sheets Ranking de Criativos\"] }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{SHEET_ID_PIORES}}",
+          "mode": "list",
+          "cachedResultName": "Piores",
+          "cachedResultUrl": ""
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -4144,
+        880
+      ],
+      "id": "16c3538c-85a0-4d5c-9c76-f3e430349479",
+      "name": "Outliers Negativos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "[Google Sheets] - Aiosphere"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "18f3a383-7988-4221-8316-24d4e339d332",
+              "leftValue": "={{ $json.roas }}",
+              "rightValue": "",
+              "operator": {
+                "type": "number",
+                "operation": "exists",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -2304,
+        608
+      ],
+      "id": "27005479-7a54-4687-9bc0-88849767f422",
+      "name": "Outlier Kind"
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $node[\"Data\"].json[\"ID Sheets Ranking de Criativos\"] }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{SHEET_ID_TOP}}",
+          "mode": "list",
+          "cachedResultName": "Top",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $node[\"Outliers + 1x1\"].json[\"row_number\"] }}",
+            "tipo": "={{ $json.tipo_criativo }}",
+            "creative title": "={{ $json.creative_title }}",
+            "creative body": "={{ $json.creative_body }}",
+            "description": "={{ $json.description }}",
+            "cta type": "={{ $json.cta_type }}",
+            "url cta": "={{ $json.url_cta }}",
+            "url media": "={{ $json.url_media }}",
+            "url instagram": "={{ $json.url_instagram }}",
+            "status": "={{ $json.status }}",
+            "created_time": "={{ $json.created_time }}",
+            "transcription": "={{ $node[\"Mapping\"].json[\"transcription_or_analysis\"] }}",
+            "checked": "✅",
+            "adset_id": "={{ $json.adset_id }}",
+            "campaign_id": "={{ $json.campaign_id }}",
+            "desempenho": "={{ $('Outliers + 1x1').item.json.desempenho }}",
+            "ad_name": "={{ $('Outliers + 1x1').item.json.ad_name }}",
+            "campaign_name": "={{ $('Outliers + 1x1').item.json.campaign_name }}",
+            "adset_name": "={{ $('Outliers + 1x1').item.json.adset_name }}",
+            "spend": "={{ $('Outliers + 1x1').item.json.spend }}",
+            "ctr": "={{ $('Outliers + 1x1').item.json.ctr }}",
+            "cpc": "={{ $('Outliers + 1x1').item.json.cpc }}",
+            "leads": "={{ $('Outliers + 1x1').item.json.leads }}",
+            "cpl": "={{ $('Outliers + 1x1').item.json.cpl }}",
+            "purchases": "={{ $('Outliers + 1x1').item.json.purchases }}",
+            "roas": "={{ $('Outliers + 1x1').item.json.roas }}",
+            "revenue": "={{ $('Outliers + 1x1').item.json.revenue }}",
+            "reach": "={{ $('Outliers + 1x1').item.json.reach }}",
+            "frequency": "={{ $('Outliers + 1x1').item.json.frequency }}",
+            "impressions": "={{ $('Outliers + 1x1').item.json.impressions }}",
+            "cpa": "={{ $('Outliers + 1x1').item.json.cpa }}",
+            "ad_id": "={{ $('Outliers + 1x1').item.json.ad_id }}",
+            "objective": "={{ $('Outliers + 1x1').item.json.objective }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "desempenho",
+              "displayName": "desempenho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ad_name",
+              "displayName": "ad_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "campaign_name",
+              "displayName": "campaign_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "adset_name",
+              "displayName": "adset_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "spend",
+              "displayName": "spend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ctr",
+              "displayName": "ctr",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cpc",
+              "displayName": "cpc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "leads",
+              "displayName": "leads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cpl",
+              "displayName": "cpl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "purchases",
+              "displayName": "purchases",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "roas",
+              "displayName": "roas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "revenue",
+              "displayName": "revenue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reach",
+              "displayName": "reach",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "frequency",
+              "displayName": "frequency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "impressions",
+              "displayName": "impressions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cpa",
+              "displayName": "cpa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ad_id",
+              "displayName": "ad_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "objective",
+              "displayName": "objective",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "creative title",
+              "displayName": "creative title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "creative body",
+              "displayName": "creative body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cta type",
+              "displayName": "cta type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url cta",
+              "displayName": "url cta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url media",
+              "displayName": "url media",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url instagram",
+              "displayName": "url instagram",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_time",
+              "displayName": "created_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "transcription",
+              "displayName": "transcription",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "adset_id",
+              "displayName": "adset_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campaign_id",
+              "displayName": "campaign_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "account_id",
+              "displayName": "account_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "checked",
+              "displayName": "checked",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -1824,
+        800
+      ],
+      "id": "33d0a3b9-a5b8-45a9-af4f-34969e4c2c60",
+      "name": "Update Positivos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "[SDGT] - Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "update",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $node[\"Data\"].json[\"ID Sheets Ranking de Criativos\"] }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{SHEET_ID_PIORES}}",
+          "mode": "list",
+          "cachedResultName": "Piores",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "row_number": "={{ $node[\"Outliers - 1x\"].json[\"row_number\"] }}",
+            "tipo": "={{ $json.tipo_criativo }}",
+            "creative title": "={{ $json.creative_title }}",
+            "creative body": "={{ $json.creative_body }}",
+            "description": "={{ $json.description }}",
+            "cta type": "={{ $json.cta_type }}",
+            "url cta": "={{ $json.url_cta }}",
+            "url media": "={{ $json.url_media }}",
+            "url instagram": "={{ $json.url_instagram }}",
+            "status": "={{ $json.status }}",
+            "created_time": "={{ $json.created_time }}",
+            "transcription": "={{ $node[\"Mapping\"].json[\"transcription_or_analysis\"] }}",
+            "checked": "✅",
+            "adset_id": "={{ $json.adset_id }}",
+            "campaign_id": "={{ $json.campaign_id }}",
+            "desempenho": "={{ $('Outliers - 1x').item.json.desempenho }}",
+            "ad_name": "={{ $('Outliers - 1x').item.json.ad_name }}",
+            "campaign_name": "={{ $('Outliers + 1x1').item.json.campaign_name }}",
+            "adset_name": "={{ $('Outliers - 1x').item.json.adset_name }}",
+            "spend": "={{ $('Outliers - 1x').item.json.spend }}",
+            "ctr": "={{ $('Outliers - 1x').item.json.ctr }}",
+            "cpc": "={{ $('Outliers - 1x').item.json.cpc }}",
+            "leads": "={{ $('Outliers + 1x1').item.json.leads }}",
+            "cpl": "={{ $('Outliers + 1x1').item.json.cpl }}",
+            "purchases": "={{ $('Outliers + 1x1').item.json.purchases }}",
+            "roas": "={{ $('Outliers + 1x1').item.json.roas }}",
+            "revenue": "={{ $('Outliers - 1x').item.json.revenue }}",
+            "reach": "={{ $('Outliers - 1x').item.json.reach }}",
+            "frequency": "={{ $('Outliers - 1x').item.json.frequency }}",
+            "impressions": "={{ $('Outliers - 1x').item.json.impressions }}",
+            "cpa": "={{ $('Outliers - 1x').item.json.cpa }}",
+            "ad_id": "={{ $('Outliers - 1x').item.json.ad_id }}",
+            "objective": "={{ $('Outliers - 1x').item.json.objective }}"
+          },
+          "matchingColumns": [
+            "row_number"
+          ],
+          "schema": [
+            {
+              "id": "desempenho",
+              "displayName": "desempenho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ad_name",
+              "displayName": "ad_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "campaign_name",
+              "displayName": "campaign_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "adset_name",
+              "displayName": "adset_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "spend",
+              "displayName": "spend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ctr",
+              "displayName": "ctr",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cpc",
+              "displayName": "cpc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "leads",
+              "displayName": "leads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cpl",
+              "displayName": "cpl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "purchases",
+              "displayName": "purchases",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "roas",
+              "displayName": "roas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "revenue",
+              "displayName": "revenue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "reach",
+              "displayName": "reach",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "frequency",
+              "displayName": "frequency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "impressions",
+              "displayName": "impressions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "cpa",
+              "displayName": "cpa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "ad_id",
+              "displayName": "ad_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "objective",
+              "displayName": "objective",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "creative title",
+              "displayName": "creative title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "creative body",
+              "displayName": "creative body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cta type",
+              "displayName": "cta type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url cta",
+              "displayName": "url cta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url media",
+              "displayName": "url media",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url instagram",
+              "displayName": "url instagram",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_time",
+              "displayName": "created_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "transcription",
+              "displayName": "transcription",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "adset_id",
+              "displayName": "adset_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "campaign_id",
+              "displayName": "campaign_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "checked",
+              "displayName": "checked",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "row_number",
+              "displayName": "row_number",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "readOnly": true,
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        -1824,
+        1040
+      ],
+      "id": "3cec6449-1bd6-44df-bf4b-d41dd67b104c",
+      "name": "Update Negativos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "[SDGT] - Google Sheets"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -3936,
+        608
+      ],
+      "id": "59a70f11-8af9-405d-87ba-e1a6a48cb52b",
+      "name": "Outliers - 1x"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1616,
+        800
+      ],
+      "id": "f12676f1-7e25-4e82-a9a9-d079163ca6f3",
+      "name": "5s +",
+      "webhookId": "c16eaa72-ba81-4302-91b3-98654d7678e1"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -1600,
+        1040
+      ],
+      "id": "e3e10b18-0b58-41e9-bf0c-f3d67e35db70",
+      "name": "5s -",
+      "webhookId": "d6276bf6-e360-47c0-9e8f-2ce8b12a97a5"
+    },
+    {
+      "parameters": {
+        "content": "### Insira aqui os parâmetros\n1. Critério de outlier positivo (em porcentagem)\n2. Critério de outlier negativo (em porcentagem)"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -4576,
+        592
+      ],
+      "typeVersion": 1,
+      "id": "a8d3f5cf-b4ef-4139-a5a3-f04a3a3373e8",
+      "name": "Sticky Note1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "728ebf1c-8554-4441-82b4-7961923bf5f7",
+              "name": "Date Preset",
+              "value": "last_30d",
+              "type": "string"
+            },
+            {
+              "id": "506f9cbe-ebb8-4958-b5a4-eff96070471a",
+              "name": "Percentual Outliers Positivos",
+              "value": "40%",
+              "type": "string"
+            },
+            {
+              "id": "17891fc9-cfba-4477-88d4-5320221812e9",
+              "name": "Percentual Outliers Negativos",
+              "value": "30%",
+              "type": "string"
+            },
+            {
+              "id": "8d88c137-383f-4307-b3cc-1f6a560ea67b",
+              "name": "telefone",
+              "value": "=DDI+DDD+9+N",
+              "type": "string"
+            },
+            {
+              "id": "a36b66cb-a00f-4734-ba0c-0ec31a6835e5",
+              "name": "Nome Completo",
+              "value": "=",
+              "type": "string"
+            },
+            {
+              "id": "ccb4cf45-f410-4022-b8ee-e0685ce4f532",
+              "name": "Inbox",
+              "value": "=",
+              "type": "string"
+            },
+            {
+              "id": "15f1d4c0-ee60-42ac-869d-f80970e24bb6",
+              "name": "Message ID",
+              "value": "=",
+              "type": "string"
+            },
+            {
+              "id": "fcad4f0f-c9db-4aee-b362-0d0b414adb2c",
+              "name": "Conversation ID",
+              "value": "=",
+              "type": "string"
+            },
+            {
+              "id": "01b2c245-fee6-4d3e-a3ae-ee425dd75d8a",
+              "name": "Account ID",
+              "value": "=act_{id}",
+              "type": "string"
+            },
+            {
+              "id": "ae84878b-b163-41d2-bc57-6a74daec8a12",
+              "name": "Account Name",
+              "value": "=",
+              "type": "string"
+            },
+            {
+              "id": "01d04d3c-a6ea-42b1-bdf7-f4e179a1ed08",
+              "name": "URL ChatWoot",
+              "value": "https://atendimento.fulanodetal.com",
+              "type": "string"
+            },
+            {
+              "id": "533bf819-08ac-491a-b181-6b5388945daf",
+              "name": "URL Evolution",
+              "value": "https://evo.fulanodetal.com",
+              "type": "string"
+            },
+            {
+              "id": "7ba6a381-c07a-4c79-a4df-330447933eed",
+              "name": "Instância Evolution",
+              "value": "FulanoDeTal",
+              "type": "string"
+            },
+            {
+              "id": "869226de-36b7-4708-a7d4-ce52ca2a9459",
+              "name": "ID Grupo",
+              "value": "=",
+              "type": "string"
+            },
+            {
+              "id": "959a1a8e-4330-4dd0-b2ac-375872e78392",
+              "name": "ID Sheets Ranking de Criativos",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "a0b7147e-f8ff-4e56-b33c-a5ffc5aa7577",
+      "name": "Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -4528,
+        832
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Anexos\nLink da Planilha: https://docs.google.com/spreadsheets/example"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        -4656,
+        1216
+      ],
+      "typeVersion": 1,
+      "id": "ce7bf783-76d7-4ff7-86c7-83796914f8d1",
+      "name": "Sticky Note"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get: Detalhes do Anúncio": {
+      "main": [
+        [
+          {
+            "node": "Tipo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo": {
+      "main": [
+        [
+          {
+            "node": "Análise de Imagem URL",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get Ad Image (via Hash)",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Instagram: Get Media",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Instagram: Get Reels",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Instagram: Get Reels",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Other",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Outliers + 1x1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Ad Image (via Hash)": {
+      "main": [
+        [
+          {
+            "node": "Análise de Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Transcrever": {
+      "main": [
+        [
+          {
+            "node": "Mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Download Video": {
+      "main": [
+        [
+          {
+            "node": "Transcrever",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Análise de Imagem": {
+      "main": [
+        [
+          {
+            "node": "Mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Análise de Imagem URL": {
+      "main": [
+        [
+          {
+            "node": "Mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram: Get Media": {
+      "main": [
+        [
+          {
+            "node": "Análise de Imagem",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instagram: Get Reels": {
+      "main": [
+        [
+          {
+            "node": "Download Video",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Other": {
+      "main": [
+        [
+          {
+            "node": "Mapping",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Mapping": {
+      "main": [
+        [
+          {
+            "node": "Outlier Kind",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outliers Positivos": {
+      "main": [
+        [
+          {
+            "node": "Outliers + 1x1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outliers + 1x1": {
+      "main": [
+        [
+          {
+            "node": "Outliers Negativos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Get: Detalhes do Anúncio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outliers Negativos": {
+      "main": [
+        [
+          {
+            "node": "Outliers - 1x",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outlier Kind": {
+      "main": [
+        [
+          {
+            "node": "Update Positivos",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Negativos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Positivos": {
+      "main": [
+        [
+          {
+            "node": "5s +",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Negativos": {
+      "main": [
+        [
+          {
+            "node": "5s -",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outliers - 1x": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Get: Detalhes do Anúncio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5s +": {
+      "main": [
+        [
+          {
+            "node": "Outliers + 1x1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5s -": {
+      "main": [
+        [
+          {
+            "node": "Outliers - 1x",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data": {
+      "main": [
+        [
+          {
+            "node": "Outliers Positivos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "49b97276-d057-4b7f-b456-dbd8288b304b",
+  "meta": {
+    "instanceId": "77e9e70bb3c32331f0dab09a28d0a11345f711e8a40eb851a82709683eb18e1e"
+  },
+  "id": "SnyTGiVzD5VNK8yk",
+  "tags": []
+}

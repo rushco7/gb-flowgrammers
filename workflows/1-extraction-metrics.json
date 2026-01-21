@@ -1,0 +1,1335 @@
+{
+  "name": "📊[Nome do Cliente][Facebook ADS] - Extração de Métricas",
+  "nodes": [
+    {
+      "parameters": {
+        "amount": 1.2
+      },
+      "id": "17a0cd50-a9d2-4e66-9d98-e6a0670e177c",
+      "name": "Wait",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        2720,
+        496
+      ],
+      "webhookId": "369b0f13-06fe-4035-838f-13c538397eb4"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "daysArray",
+        "options": {}
+      },
+      "id": "cfb90648-d18d-46b1-87f8-e86d15f09f96",
+      "name": "Split Out",
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        1696,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "jsCode": "// 💠 Criado por @prof.palomasilva - Automação Inteligente com n8n & IA 💠\n// Resumo: Este código gera um array com as datas dos últimos 8 dias, incluindo a data atual.\n\nconst daysArray = [];\nconst today = new Date();\n\nfor (let i = 7; i >= 0; i--) {\n    const date = new Date();\n    date.setDate(today.getDate() - i);\n    \n    const formattedDate = date.toISOString().split('T')[0];\n    daysArray.push(formattedDate);\n}\n\nreturn { daysArray };\n\n// 💠 Criado por @prof.palomasilva - Automação Inteligente com n8n & IA 💠\n"
+      },
+      "id": "cc2328cc-8992-4397-8dfa-2014f9a7728a",
+      "name": "Lista 8 dias",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        1504,
+        464
+      ]
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {}
+      },
+      "id": "8b384774-6d1e-48a7-9b84-e911f7f337a2",
+      "name": "split_ad",
+      "type": "n8n-nodes-base.itemLists",
+      "typeVersion": 1,
+      "position": [
+        2528,
+        176
+      ],
+      "alwaysOutputData": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "batchSize": 50,
+        "options": {
+          "reset": "={{ $node[\"Metricas\"].context[\"done\"] }}"
+        }
+      },
+      "id": "d0dc0201-dd26-46b9-8b1c-d2cf2f725141",
+      "name": "Metricas",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        2928,
+        176
+      ]
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "id": "6e0868f3-a206-4b44-8ecf-2d8cfba06f04",
+      "name": "Conta Facebook",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1040,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": "={{ $node[\"Separa Dias\"].context[\"done\"] }}"
+        }
+      },
+      "id": "020e77f1-9342-413f-9533-0f8c249a5b4e",
+      "name": "Separa Dias",
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        1904,
+        352
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 20
+            }
+          ]
+        }
+      },
+      "id": "584abf68-ebd0-4a49-bff7-b04687bd5253",
+      "name": "20h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        416,
+        512
+      ]
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 11
+            }
+          ]
+        }
+      },
+      "id": "7e08b016-85df-4373-a60c-a9359674f06a",
+      "name": "11h",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        416,
+        320
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForEachItem",
+        "jsCode": "// Função para extrair dados de uma array específica e adicionar ao JSON de saída\nfunction extractData(arrayName, isCostArray = false) {\n  let dataArray = $input.item.json[arrayName];\n  if (dataArray && Array.isArray(dataArray)) {\n    for (let i = 0; i < dataArray.length; i++) {\n      let dataItem = dataArray[i];\n      let action = dataItem.action_type;\n      let value = dataItem.value;\n\n      // Se é uma array de custos, nomeia o campo como `cost_{action}`\n      // Caso contrário, nomeia o campo como `action_{action}`\n      if (isCostArray) {\n        $input.item.json[`${arrayName}_cost_${action}`] = value;\n      } else {\n        $input.item.json[`${arrayName}_count_${action}`] = value;\n      }\n    }\n  }\n}\n\n// Extrai dados de contagem da array \"actions\" (quantidade)\nextractData(\"actions\");\n\n// Extrai dados de custo da array \"cost_per_action_type\" (valor de custo)\nextractData(\"cost_per_action_type\", true);\n\n// Extrai dados de valores da array \"action_values\" (valor de ações, incluindo 'purchase')\nextractData(\"action_values\", true);\n\n// Extrai dados das arrays adicionais de ações de vídeo como contagem\nextractData(\"video_30_sec_watched_actions\");\nextractData(\"video_avg_time_watched_actions\");\nextractData(\"video_p100_watched_actions\");\nextractData(\"video_p25_watched_actions\");\nextractData(\"video_p50_watched_actions\");\nextractData(\"video_p75_watched_actions\");\nextractData(\"video_p95_watched_actions\");\n\n// Retorna o JSON atualizado\nreturn $input.item;\n"
+      },
+      "id": "6d3d0148-640c-4ccf-8d1d-e1a886f40ee0",
+      "name": "Extrai Metricas da Array Actions",
+      "type": "n8n-nodes-base.code",
+      "position": [
+        2720,
+        176
+      ],
+      "typeVersion": 1,
+      "alwaysOutputData": true,
+      "continueOnFail": true
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e04e7912-ef2b-4b09-a5ac-a08dcfcdaf71",
+              "name": "ID Planilha Extração de Métricas",
+              "value": "",
+              "type": "string"
+            },
+            {
+              "id": "ff720a78-a3ec-48a1-9daf-f5b5d40f839a",
+              "name": "isSchedule",
+              "value": "={{ ($json.timestamp ? true : false) }}",
+              "type": "boolean"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "6bac22ee-a028-43f6-ab97-1c2c48a8515f",
+      "name": "Variables",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        688,
+        320
+      ],
+      "executeOnce": true
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $item(\"0\").$node[\"Variables\"].json[\"ID Planilha Extração de Métricas\"] }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "{{SHEET_ID_CONTAS}}",
+          "mode": "list",
+          "cachedResultName": "BM",
+          "cachedResultUrl": ""
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        864,
+        320
+      ],
+      "id": "6e2d47e2-3fc3-4a5c-bf24-c2392857c4fd",
+      "name": "Get: Contas",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "[Google Sheets] - Aiosphere"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $node[\"Variables\"].json[\"ID Planilha Extração de Métricas\"] }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "{{SHEET_ID_METRICAS}}",
+          "mode": "list",
+          "cachedResultName": "dados",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {
+            "spend": "={{ $('METRICAS PERSONALIZADAS1').item.json.spend }}",
+            "purchase": "={{ $('METRICAS PERSONALIZADAS1').item.json.purchase }}",
+            "custo_por_venda": "={{ $('METRICAS PERSONALIZADAS1').item.json.custo_por_venda }}",
+            "clique_no_link": "={{ $('METRICAS PERSONALIZADAS1').item.json.clique_no_link }}",
+            "ctr_link_click": "={{ $('METRICAS PERSONALIZADAS1').item.json.ctr_link_click }}",
+            "landing_page_view": "={{ $('METRICAS PERSONALIZADAS1').item.json.landing_page_view }}",
+            "cost_por_lpv": "={{ $('METRICAS PERSONALIZADAS1').item.json.cost_por_lpv }}",
+            "add_to_cart": "={{ $('METRICAS PERSONALIZADAS1').item.json.add_to_cart }}",
+            "finalizacao_de_compra_iniciada": "={{ $('METRICAS PERSONALIZADAS1').item.json.finalizacao_de_compra_iniciada }}",
+            "valor_de_compra": "={{ $('METRICAS PERSONALIZADAS1').item.json.valor_de_compra }}",
+            "roas": "={{ $('METRICAS PERSONALIZADAS1').item.json.roas }}",
+            "frequency": "={{ $('METRICAS PERSONALIZADAS1').item.json.frequency }}",
+            "cpm": "={{ $('METRICAS PERSONALIZADAS1').item.json.cpm }}",
+            "ctr": "={{ $('METRICAS PERSONALIZADAS1').item.json.ctr }}",
+            "cpc": "={{ $('METRICAS PERSONALIZADAS1').item.json.cpc }}",
+            "reach": "={{ $('METRICAS PERSONALIZADAS1').item.json.reach }}",
+            "impressions": "={{ $('METRICAS PERSONALIZADAS1').item.json.impressions }}",
+            "conta de anuncio - act": "={{ $('Conta Facebook').item.json['ID Conta de Anuncio'] }}",
+            "date_start": "={{ $('Separa Dias').item.json.daysArray }}",
+            "adset_name": "={{ $('METRICAS PERSONALIZADAS1').item.json.adset_name }}",
+            "ad_name": "={{ $('METRICAS PERSONALIZADAS1').item.json.ad_name }}",
+            "objective": "={{ $('METRICAS PERSONALIZADAS1').item.json.objective }}",
+            "ad_id": "={{ $('METRICAS PERSONALIZADAS1').item.json.ad_id }}",
+            "campaign_name": "={{ $('METRICAS PERSONALIZADAS1').item.json.campaign_name }}",
+            "Nome_da_Conta": "={{ $('METRICAS PERSONALIZADAS1').item.json.Nome_da_Conta }}",
+            "ID": "={{ $('Separa Dias').item.json.daysArray }} {{ $('Metricas').item.json.ad_id }} {{ $('Conta Facebook').item.json['ID Conta de Anuncio'] }}",
+            "leads": "={{ $json.leads }}"
+          },
+          "matchingColumns": [
+            "ID"
+          ],
+          "schema": [
+            {
+              "id": "conta de anuncio - act",
+              "displayName": "conta de anuncio - act",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "date_start",
+              "displayName": "date_start",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "campaign_name",
+              "displayName": "campaign_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "adset_name",
+              "displayName": "adset_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ad_name",
+              "displayName": "ad_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "objective",
+              "displayName": "objective",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "spend",
+              "displayName": "spend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "purchase",
+              "displayName": "purchase",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "custo_por_venda",
+              "displayName": "custo_por_venda",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "clique_no_link",
+              "displayName": "clique_no_link",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ctr_link_click",
+              "displayName": "ctr_link_click",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "landing_page_view",
+              "displayName": "landing_page_view",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cost_por_lpv",
+              "displayName": "cost_por_lpv",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "add_to_cart",
+              "displayName": "add_to_cart",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "finalizacao_de_compra_iniciada",
+              "displayName": "finalizacao_de_compra_iniciada",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "valor_de_compra",
+              "displayName": "valor_de_compra",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "roas",
+              "displayName": "roas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "frequency",
+              "displayName": "frequency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cpm",
+              "displayName": "cpm",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cpc",
+              "displayName": "cpc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ctr",
+              "displayName": "ctr",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reach",
+              "displayName": "reach",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "impressions",
+              "displayName": "impressions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ad_id",
+              "displayName": "ad_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "Nome_da_Conta",
+              "displayName": "Nome_da_Conta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ID",
+              "displayName": "ID",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "leads",
+              "displayName": "leads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "3843d22e-d0de-4245-a173-080a3e72370f",
+      "name": "Adiciona à Planilha",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.3,
+      "position": [
+        3328,
+        192
+      ],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "[Google Sheets] - Aiosphere"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1,
+      "position": [
+        416,
+        112
+      ],
+      "id": "f6fffcd1-aadb-4751-9e3c-8e017224f8a9",
+      "name": "Execute Workflow Trigger"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $node[\"Variables\"].json[\"isSchedule\"] }}",
+                    "rightValue": "",
+                    "operator": {
+                      "type": "boolean",
+                      "operation": "false",
+                      "singleValue": true
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Pretéritas"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "8D"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        1280,
+        336
+      ],
+      "id": "528855a7-03ae-4ecf-a53e-7aef8ed72e64",
+      "name": "Período"
+    },
+    {
+      "parameters": {
+        "jsCode": "// 💠 Criado por @prof.palomasilva - Automação Inteligente com n8n & IA 💠\n// Resumo: Este código gera um array com todas as datas, do primeiro dia do ano passado até a data atual.\n\nconst today = new Date();\nconst startDate = new Date(today.getFullYear() - 1, 0, 1); // Primeiro dia do ano passado\nconst daysArray = [];\n\nlet currentDate = new Date(startDate);\n\nwhile (currentDate <= today) {\n    daysArray.push(currentDate.toISOString().split('T')[0]);\n    currentDate.setDate(currentDate.getDate() + 1);\n}\n\nreturn { daysArray };\n\n// 💠 Criado por @prof.palomasilva - Automação Inteligente com n8n & IA 💠\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        1504,
+        240
+      ],
+      "id": "001742f9-b0b6-4063-bf9b-db03f311e7d7",
+      "name": "Lista Pretéritas"
+    },
+    {
+      "parameters": {
+        "amount": 4,
+        "unit": "seconds"
+      },
+      "id": "dc3404a1-b28a-42af-88f5-8bf7610b554e",
+      "name": "Wait 5s",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1,
+      "position": [
+        3520,
+        192
+      ],
+      "webhookId": "3ca7cb8b-dfa9-4322-9ba5-dde34a160e4a"
+    },
+    {
+      "parameters": {
+        "content": "## Período Padrão\nA partir do 1º dia do ano anterior até o dia atual",
+        "color": 5
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1440,
+        48
+      ],
+      "typeVersion": 1,
+      "id": "6eea06c5-5c3b-45e4-8a72-42f73f1fca60",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v22.0",
+        "node": "={{ $('Conta Facebook').item.json[\"ID Conta de Anuncio\"] }}",
+        "edge": "insights",
+        "options": {
+          "fields": {
+            "field": [
+              {
+                "name": "campaign_name,ad_id,adset_name,ad_name,objective,reach,impressions,frequency,actions,action_values,cost_per_action_type,cpm,ctr,cpc,spend,canvas_avg_view_percent,canvas_avg_view_time,conversion_values,instant_experience_clicks_to_start,purchase_roas,video_30_sec_watched_actions,video_avg_time_watched_actions,video_continuous_2_sec_watched_actions,video_p100_watched_actions,video_p25_watched_actions,video_p50_watched_actions,video_p75_watched_actions,video_p95_watched_actions,video_play_retention_0_to_15s_actions,video_play_retention_20_to_60s_actions"
+              }
+            ]
+          },
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "level",
+                "value": "ad"
+              },
+              {
+                "name": "time_range",
+                "value": "={\"since\":\"{{ $node[\"Separa Dias\"].json[\"daysArray\"] }}\",\"until\":\"{{ $node[\"Separa Dias\"].json[\"daysArray\"] }}\"}"
+              },
+              {
+                "name": "limit",
+                "value": "999"
+              }
+            ]
+          }
+        }
+      },
+      "id": "d3dbbbd7-8669-4d7f-b1a1-2916c3d4d5dc",
+      "name": "Fetch Metrics",
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        2160,
+        384
+      ],
+      "retryOnFail": true,
+      "maxTries": 5,
+      "waitBetweenTries": 5000,
+      "executeOnce": true,
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "",
+          "name": "[Facebook Graph] - Token System"
+        }
+      },
+      "onError": "continueRegularOutput"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "c0a1d2e8-0a71-4fba-a008-877a9b481974",
+              "leftValue": "={{ $('Fetch Metrics').item.json[\"data\"] }}",
+              "rightValue": "=",
+              "operator": {
+                "type": "array",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "a3117655-175b-4f76-8a28-a5c186d2bded",
+      "name": "Metrics Exist",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        2336,
+        384
+      ]
+    },
+    {
+      "parameters": {},
+      "id": "9a11bb87-eca9-4a3f-90a3-afe4fde5a4bd",
+      "name": "Next",
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        2544,
+        496
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "d1143ec5-bb1c-4747-80a3-87c60efa4769",
+              "name": "conta de anuncio - act",
+              "value": "={{ $('Conta Facebook').item.json['ID Conta de Anuncio'] }}",
+              "type": "string"
+            },
+            {
+              "id": "75a10a9d-e6d0-4360-87fd-960d0617ad6d",
+              "name": "date_start",
+              "value": "={{ $('Metricas').item.json['date_start'] }}",
+              "type": "string"
+            },
+            {
+              "id": "47b8c348-127b-4990-9340-62d98bb8ff12",
+              "name": "campaign_name",
+              "value": "={{ $('Metricas').item.json['campaign_name'] }}",
+              "type": "string"
+            },
+            {
+              "id": "1bb2b10d-e88e-43a2-beb0-9cf8a83cc83b",
+              "name": "adset_name",
+              "value": "={{ $('Metricas').item.json['adset_name'] }}",
+              "type": "string"
+            },
+            {
+              "id": "e4d3bfbc-db49-490c-8d06-dea1974880b6",
+              "name": "ad_name",
+              "value": "={{ $('Metricas').item.json['ad_name'] }}",
+              "type": "string"
+            },
+            {
+              "id": "b240cc27-d6b7-4b62-b0d3-fde6a57c41fd",
+              "name": "objective",
+              "value": "={{ $('Metricas').item.json['objective'] }}",
+              "type": "string"
+            },
+            {
+              "id": "0ee99eff-8784-4d9f-a2ff-2cd5d1216594",
+              "name": "spend",
+              "value": "={{ $('Metricas').item.json['spend'].replace('.', ',') }}",
+              "type": "string"
+            },
+            {
+              "id": "58eb321d-1430-4c7a-adf2-8e338db6b7de",
+              "name": "purchase",
+              "value": "={{ $('Metricas').item.json['actions_count_web_in_store_purchase'] || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "c5309a4b-8ecc-40a1-b534-e6834f2ada73",
+              "name": "custo_por_venda",
+              "value": "={{ ((($('Metricas').item.json['spend'] || 0) / $('Metricas').item.json['actions_count_web_in_store_purchase']) || 0).toFixed(2).replace('.', ',') }}",
+              "type": "number"
+            },
+            {
+              "id": "53faddbf-f9b6-457f-9368-527df06719f1",
+              "name": "clique_no_link",
+              "value": "={{ $('Metricas').item.json['actions_count_link_click'] || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "ac548af8-d44a-48ff-8a2d-3d06371070d8",
+              "name": "ctr_link_click",
+              "value": "={{ (((($('Metricas').item.json['actions_count_link_click'] || 0) / $('Metricas').item.json['impressions']) * 100) || 0).toFixed(2).replace('.', ',') }}",
+              "type": "number"
+            },
+            {
+              "id": "ae39dc45-fafd-4e95-b3d2-3e81ce4ab527",
+              "name": "landing_page_view",
+              "value": "={{ $('Metricas').item.json['actions_count_landing_page_view'] || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "bc6ae0c5-3b9e-4a9f-9541-2b623cb1a93a",
+              "name": "cost_por_lpv",
+              "value": "={{ (((($('Metricas').item.json['spend'] || 0) / $('Metricas').item.json['actions_count_landing_page_view']) || 0).toFixed(2).replace('.', ',')) }}",
+              "type": "number"
+            },
+            {
+              "id": "5c832159-16e8-430a-9aae-41d58f1f9225",
+              "name": "add_to_cart",
+              "value": "={{ $('Metricas').item.json['actions_count_add_to_cart'] || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "200bf0a0-87a2-4f92-bfd9-85361f9a4ae2",
+              "name": "finalizacao_de_compra_iniciada",
+              "value": "={{ $('Metricas').item.json['actions_count_omni_initiated_checkout'] || 0 }}",
+              "type": "number"
+            },
+            {
+              "id": "9ee07050-8c5a-4d74-bddb-84beb9cb31c2",
+              "name": "valor_de_compra",
+              "value": "={{ $('Metricas').item.json['action_values_cost_onsite_web_app_purchase'].replace('.', ',') || '0,00' }}",
+              "type": "number"
+            },
+            {
+              "id": "c54e04cb-d529-4819-83cf-a8e928f4a138",
+              "name": "roas",
+              "value": "={{ ((($('Metricas').item.json['actions_count_web_in_store_purchase'] || 0) / $('Metricas').item.json['spend'])  || 0 ).toFixed(2).replace('.', ',') }}",
+              "type": "number"
+            },
+            {
+              "id": "39fab486-5665-4f9d-859b-c0925d8aeda6",
+              "name": "frequency",
+              "value": "={{ $('Metricas').item.json['frequency'] }}",
+              "type": "string"
+            },
+            {
+              "id": "535c1a5a-2d4d-4af5-a2d5-2a576fc466b9",
+              "name": "cpm",
+              "value": "={{ $('Metricas').item.json['cpm'].replace('.', ',') }}",
+              "type": "number"
+            },
+            {
+              "id": "c9b6f3f4-6692-43a5-b963-dd67c627671b",
+              "name": "cpc",
+              "value": "={{ $('Metricas').item.json['cpc'].replace('.', ',') }}",
+              "type": "number"
+            },
+            {
+              "id": "802766e8-ebbd-423d-abb7-0f47dc1175e2",
+              "name": "ctr",
+              "value": "={{ $('Metricas').item.json['ctr'].replace('.', ',') }}",
+              "type": "string"
+            },
+            {
+              "id": "6b53a133-6e4a-4e08-8676-1953d5b0c76c",
+              "name": "reach",
+              "value": "={{ $('Metricas').item.json['reach'] }}",
+              "type": "string"
+            },
+            {
+              "id": "f113af7e-8d81-4924-8061-970b346058e6",
+              "name": "impressions",
+              "value": "={{ $('Metricas').item.json['impressions'] }}",
+              "type": "string"
+            },
+            {
+              "id": "38693804-bcc8-42f1-b3c3-12a23028cc75",
+              "name": "ad_id",
+              "value": "={{ $('Metricas').item.json['ad_id'] }}",
+              "type": "string"
+            },
+            {
+              "id": "f39428ea-d75a-4534-8d97-59b72a261881",
+              "name": "Nome_da_Conta",
+              "value": "={{ $('Conta Facebook').item.json.Nome }}",
+              "type": "string"
+            },
+            {
+              "id": "571d4339-849d-4be6-b2c5-7208e34f165d",
+              "name": "ID",
+              "value": "={{ $('Separa Dias').item.json.daysArray }} {{ $('Metricas').item.json.ad_id }} {{ $('Conta Facebook').item.json['ID Conta de Anuncio'] }}",
+              "type": "string"
+            },
+            {
+              "id": "0621f24e-3380-407b-8924-80f28ff81f9e",
+              "name": "leads",
+              "value": "={{ $('Metricas').item.json['actions_count_lead'] }}",
+              "type": "number"
+            },
+            {
+              "id": "d6e09ec5-59b7-40ce-82ee-325bbb5421cf",
+              "name": "cadastros",
+              "value": "={{ $('Metricas').item.json['actions_count_leadgen_grouped'] }}",
+              "type": "number"
+            },
+            {
+              "id": "91d7a5ee-1eee-4058-8f9c-5935e0890dc0",
+              "name": "contatos",
+              "value": "={{ $('Metricas').item.json['actions_count_contact_total'] }}",
+              "type": "number"
+            },
+            {
+              "id": "cc76721c-1fa6-49cc-9d11-2ea4f717f9f8",
+              "name": "mensagens",
+              "value": "={{ $('Metricas').item.json['actions_count_onsite_conversion.messaging_conversation_started_7d'] }}",
+              "type": "string"
+            },
+            {
+              "id": "21d1ffc4-8c4d-45bb-9ee5-85bfb9452395",
+              "name": "conversions",
+              "value": "={{ $('Metricas').item.json['actions_count_offsite_conversion.fb_pixel_purchase'] }}",
+              "type": "string"
+            },
+            {
+              "id": "a2315202-91fc-4cb0-8851-97e44738623d",
+              "name": "view content",
+              "value": "={{ $('Metricas').item.json['actions_count_offsite_conversion.fb_pixel_view_content'] }}",
+              "type": "string"
+            },
+            {
+              "id": "e2cdf475-cb57-4ea7-aeeb-c7a6c936e921",
+              "name": "search",
+              "value": "={{  $('Metricas').item.json['actions_count_offsite_conversion.fb_pixel_search'] }}",
+              "type": "string"
+            },
+            {
+              "id": "835bf7f0-666d-490b-b95a-13d42c648930",
+              "name": "add info payment",
+              "value": "={{ $('Metricas').item.json['actions_count_offsite_conversion.fb_pixel_add_payment_info'] }}",
+              "type": "string"
+            },
+            {
+              "id": "697a9c32-e221-4179-8534-c8a60bb80e85",
+              "name": "post engagement",
+              "value": "={{ $('Metricas').item.json['actions_count_post_engagement'] }}",
+              "type": "number"
+            },
+            {
+              "id": "3b5ce2c0-25ee-429f-9fb2-c14f9d6f4b9f",
+              "name": "video view",
+              "value": "={{ $('Metricas').item.json['actions_count_video_view'] }}",
+              "type": "number"
+            },
+            {
+              "id": "a5992aca-534b-48fe-9100-16b011e05db5",
+              "name": "post reaction",
+              "value": "={{ $('Metricas').item.json['actions_count_post_reaction'] }}",
+              "type": "number"
+            },
+            {
+              "id": "480e0d4f-ea25-4956-9cdc-919e6d1bc834",
+              "name": "vv 30sec watched",
+              "value": "={{ $('Metricas').item.json['video_30_sec_watched_actions_count_video_view'] }}",
+              "type": "string"
+            },
+            {
+              "id": "fdd8655d-cfd9-4d07-9522-c08f06313003",
+              "name": "video_avg_time_watched",
+              "value": "={{ $('Metricas').item.json['video_avg_time_watched_actions_count_video_view'] }}",
+              "type": "string"
+            },
+            {
+              "id": "a9be00df-db3a-4fbe-99d8-90b4f5589656",
+              "name": "video_p100_watched",
+              "value": "={{ $('Metricas').item.json['video_p100_watched_actions_count_video_view'] }}",
+              "type": "number"
+            },
+            {
+              "id": "413c46df-fbce-48ed-b8c5-a253f388f65b",
+              "name": "video_p25_watched",
+              "value": "={{ $('Metricas').item.json['video_p25_watched_actions_count_video_view'] }}",
+              "type": "number"
+            },
+            {
+              "id": "0daccd5a-10b1-46e3-82c4-6b629b37cd32",
+              "name": "video_p50_watched",
+              "value": "={{ $('Metricas').item.json['video_p50_watched_actions_count_video_view'] }}",
+              "type": "number"
+            },
+            {
+              "id": "7b6de1e0-cabd-41ba-86cf-9ee310a20190",
+              "name": "video_p75_watched",
+              "value": "={{ $('Metricas').item.json['video_p75_watched_actions_count_video_view'] }}",
+              "type": "number"
+            },
+            {
+              "id": "cb4f6a40-e83a-4d96-9b29-3b7de9918980",
+              "name": "video_p95_watched",
+              "value": "={{ $('Metricas').item.json['video_p95_watched_actions_count_video_view'] }}",
+              "type": "number"
+            },
+            {
+              "id": "d19b5f4d-f473-4fac-8981-2bb8d1e1b3d0",
+              "name": "post save",
+              "value": "={{ $('Metricas').item.json['actions_count_onsite_conversion.post_save'] }}",
+              "type": "number"
+            },
+            {
+              "id": "fcfdd285-aba1-4daf-ad79-27acb48d942e",
+              "name": "conversas 7d",
+              "value": "={{ $('Metricas').item.json['actions_count_onsite_conversion.messaging_conversation_started_7d'] }}",
+              "type": "number"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "include": "selected",
+        "options": {
+          "ignoreConversionErrors": true
+        }
+      },
+      "id": "85ae24ce-50a0-4242-9869-7a308a043ebd",
+      "name": "Map Metrics Data",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.3,
+      "position": [
+        3120,
+        192
+      ]
+    },
+    {
+      "parameters": {
+        "content": "## Anexos\nLink da planilha: https://docs.google.com/spreadsheets/example\n\nLink do Dash: https://lookerstudio.google.com/example",
+        "height": 224,
+        "width": 400
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        704,
+        704
+      ],
+      "typeVersion": 1,
+      "id": "60eb3f5c-d80c-4a2e-b9be-40566f54f5e9",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {
+    "Execute Workflow Trigger": [
+      {
+        "json": {
+          "name": "First item",
+          "code": 1
+        }
+      },
+      {
+        "json": {
+          "name": "Second item",
+          "code": 2
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Separa Dias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Separa Dias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista 8 dias": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "split_ad": {
+      "main": [
+        [
+          {
+            "node": "Extrai Metricas da Array Actions",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metricas": {
+      "main": [
+        [
+          {
+            "node": "Separa Dias",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Map Metrics Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conta Facebook": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Período",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Separa Dias": {
+      "main": [
+        [
+          {
+            "node": "Conta Facebook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Fetch Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "20h": {
+      "main": [
+        [
+          {
+            "node": "Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "11h": {
+      "main": [
+        [
+          {
+            "node": "Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrai Metricas da Array Actions": {
+      "main": [
+        [
+          {
+            "node": "Metricas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Variables": {
+      "main": [
+        [
+          {
+            "node": "Get: Contas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get: Contas": {
+      "main": [
+        [
+          {
+            "node": "Conta Facebook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Adiciona à Planilha": {
+      "main": [
+        [
+          {
+            "node": "Wait 5s",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Execute Workflow Trigger": {
+      "main": [
+        [
+          {
+            "node": "Variables",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Período": {
+      "main": [
+        [
+          {
+            "node": "Lista Pretéritas",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Lista 8 dias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lista Pretéritas": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait 5s": {
+      "main": [
+        [
+          {
+            "node": "Metricas",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Metrics": {
+      "main": [
+        [
+          {
+            "node": "Metrics Exist",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Metrics Exist": {
+      "main": [
+        [
+          {
+            "node": "split_ad",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Next",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Next": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map Metrics Data": {
+      "main": [
+        [
+          {
+            "node": "Adiciona à Planilha",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "CeG6eiB4lKILQAq7"
+  },
+  "versionId": "4a377bae-c5a4-45e3-8c88-90bcedcf920b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "77e9e70bb3c32331f0dab09a28d0a11345f711e8a40eb851a82709683eb18e1e"
+  },
+  "id": "4F39oFh6lmy2pnLh",
+  "tags": []
+}

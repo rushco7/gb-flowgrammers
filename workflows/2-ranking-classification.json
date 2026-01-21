@@ -1,0 +1,896 @@
+{
+  "name": "📊[Nome do Cliente][Facebook ADS] - Ranking de Criativos (Classificação)",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "triggerAtHour": 8
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1,
+      "position": [
+        320,
+        256
+      ],
+      "id": "71302b1f-1358-4566-a329-847248e89ea8",
+      "name": "Schedule Trigger"
+    },
+    {
+      "parameters": {
+        "graphApiVersion": "v19.0",
+        "node": "={{ $json[\"Account ID\"] }}",
+        "edge": "insights",
+        "options": {
+          "fields": {
+            "field": [
+              {
+                "name": "ad_id,ad_name,adset_name,campaign_name,objective,spend,cpc,ctr,frequency,reach,impressions,actions,action_values,start_time,end_time,purchase_roas"
+              }
+            ]
+          },
+          "queryParameters": {
+            "parameter": [
+              {
+                "name": "level",
+                "value": "ad"
+              },
+              {
+                "name": "date_preset",
+                "value": "={{ $json[\"Date Preset\"] }}"
+              },
+              {
+                "name": "limit",
+                "value": "500"
+              },
+              {
+                "name": "time_increment",
+                "value": "all_days"
+              }
+            ]
+          }
+        }
+      },
+      "type": "n8n-nodes-base.facebookGraphApi",
+      "typeVersion": 1,
+      "position": [
+        736,
+        144
+      ],
+      "id": "8e547348-1502-4fb3-810f-61405e3ba15b",
+      "name": "Fetch Metrics",
+      "credentials": {
+        "facebookGraphApi": {
+          "id": "",
+          "name": "[Facebook Graph] - Token System"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "97424db9-1912-4aa8-9366-419b788448eb",
+              "name": "Account ID",
+              "value": "act_{{ACCOUNT_ID}}",
+              "type": "string"
+            },
+            {
+              "id": "921869e8-31a8-422d-bff8-bd0fc08e27c1",
+              "name": "Date Preset",
+              "value": "last_30d",
+              "type": "string"
+            },
+            {
+              "id": "860d5bfa-298e-4a6f-96a2-a9829f270940",
+              "name": "Percentual Outliers Positivos",
+              "value": "40%",
+              "type": "string"
+            },
+            {
+              "id": "3be52bd7-1065-4f32-849c-a5b671a53ae0",
+              "name": "Percentual Outliers Negativos",
+              "value": "30%",
+              "type": "string"
+            },
+            {
+              "id": "6732f7a9-963d-4299-a931-15fe1e2e1e78",
+              "name": "ID Sheets Ranking de Criativos",
+              "value": "",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        544,
+        256
+      ],
+      "id": "4ac91054-0683-4a12-87c1-bb058d929486",
+      "name": "Data"
+    },
+    {
+      "parameters": {
+        "content": "### Insira aqui os parâmetros\n1. Selecione a Conta de Anúncios\n2. Defina o período de análise (Ex: last_30d)\n3. Critério de outlier positivo (em porcentagem)\n4. Critério de outlier negativo (em porcentagem)",
+        "height": 218.47167325428198,
+        "width": 328.7183622828784
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        480,
+        16
+      ],
+      "typeVersion": 1,
+      "id": "893d5673-9a74-42f0-9b43-40f952f9c566",
+      "name": "Sticky Note"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = items[0].json.data;\nconst threshold = parseFloat($node[\"Data\"].json[\"Percentual Outliers Positivos\"]) / 100;\n\nfunction parseNumber(value) {\n  const num = parseFloat(value);\n  return isNaN(num) ? 0 : num;\n}\n\nlet totalSpend = 0;\nlet totalCTR = 0;\nlet totalCPC = 0;\nlet totalROAS = 0;\nlet totalLeads = 0;\nlet totalPurchases = 0;\nlet totalRevenue = 0;\nlet totalCPA = 0;\nlet countCTR = 0;\nlet countCPC = 0;\nlet countROAS = 0;\nlet countCPA = 0;\n\nlet creatives = [];\n\ninput.forEach(ad => {\n  const spend = parseNumber(ad.spend);\n  const ctr = parseNumber(ad.ctr);\n  const cpc = parseNumber(ad.cpc);\n  const frequency = parseNumber(ad.frequency);\n  const reach = parseNumber(ad.reach);\n  const impressions = parseNumber(ad.impressions);\n\n  let leads = 0;\n  let purchases = 0;\n  let revenue = 0;\n\n  ad.actions?.forEach(action => {\n    if (action.action_type === 'lead') leads += parseNumber(action.value);\n    if (action.action_type.includes('purchase')) {\n      purchases += parseNumber(action.value);\n    }\n  });\n\n  ad.purchase_roas?.forEach(roas => {\n    revenue += parseNumber(roas.value);\n  });\n\n  totalSpend += spend;\n  if (ctr > 0) { totalCTR += ctr; countCTR++; }\n  if (cpc > 0) { totalCPC += cpc; countCPC++; }\n  if (revenue > 0 && spend > 0) { totalROAS += revenue / spend; countROAS++; }\n  if (leads > 0) { totalLeads += leads; }\n  if (purchases > 0) { totalPurchases += purchases; }\n\n  let totalConversions = leads + purchases;\n  let cpa = (spend > 0 && totalConversions > 0) ? spend / totalConversions : 0;\n  if (cpa > 0) { totalCPA += cpa; countCPA++; }\n\n  creatives.push({\n    ad_id: ad.ad_id,\n    ad_name: ad.ad_name,\n    adset_name: ad.adset_name,\n    campaign_name: ad.campaign_name,\n    objective: ad.objective,\n    spend,\n    ctr,\n    cpc,\n    frequency,\n    reach,\n    impressions,\n    leads,\n    purchases,\n    revenue,\n    roas: (revenue && spend) ? revenue / spend : 0,\n    cpl: (leads > 0) ? spend / leads : 0,\n    cpa\n  });\n});\n\nconst avgCTR = countCTR ? totalCTR / countCTR : 0;\nconst avgCPC = countCPC ? totalCPC / countCPC : 0;\nconst avgROAS = countROAS ? totalROAS / countROAS : 0;\nconst avgCPL = (totalLeads > 0) ? totalSpend / totalLeads : 0;\nconst avgCPA = countCPA ? totalCPA / countCPA : 0;\n\nfunction evaluate(ad) {\n  let tags = [];\n\n  if (ad.cpa > 0 && ad.cpa <= avgCPA * (1 - threshold)) {\n    const diff = ((avgCPA - ad.cpa) / avgCPA) * 100;\n    tags.push(`🏅 CPA ${Math.round(diff)}% abaixo da média (R$${ad.cpa.toFixed(2)} vs R$${avgCPA.toFixed(2)})`);\n  }\n\n  if (ad.objective.includes('LEADS')) {\n    if (ad.cpl > 0 && ad.cpl <= avgCPL * (1 - threshold)) {\n      const diff = ((avgCPL - ad.cpl) / avgCPL) * 100;\n      tags.push(`📉 CPL ${Math.round(diff)}% abaixo da média (R$${ad.cpl.toFixed(2)} vs R$${avgCPL.toFixed(2)})`);\n    }\n  }\n\n  if (ad.objective.includes('SALES')) {\n    if (ad.roas >= avgROAS * (1 + threshold)) {\n      const diff = ((ad.roas - avgROAS) / avgROAS) * 100;\n      tags.push(`💰 ROAS ${Math.round(diff)}% acima da média (${ad.roas.toFixed(2)} vs ${avgROAS.toFixed(2)})`);\n  }\n  }\n\n  if (ad.ctr >= avgCTR * (1 + threshold)) {\n    const diff = ((ad.ctr - avgCTR) / avgCTR) * 100;\n    tags.push(`🔥 CTR ${Math.round(diff)}% acima da média (${ad.ctr.toFixed(2)}% vs ${avgCTR.toFixed(2)}%)`);\n  }\n\n  if (ad.cpc > 0 && ad.cpc <= avgCPC * (1 - threshold)) {\n    const diff = ((avgCPC - ad.cpc) / avgCPC) * 100;\n    tags.push(`💸 CPC ${Math.round(diff)}% abaixo da média (R$${ad.cpc.toFixed(2)} vs R$${avgCPC.toFixed(2)})`);\n  }\n\n  return tags;\n}\n\nconst detailed = creatives.map(ad => {\n  const tags = evaluate(ad);\n  return {\n    ad_name: ad.ad_name,\n    ad_id: ad.ad_id,\n    adset_name: ad.adset_name,\n    campaign_name: ad.campaign_name,\n    objective: ad.objective,\n    spend: ad.spend,\n    ctr: ad.ctr,\n    cpc: ad.cpc,\n    leads: ad.leads,\n    cpl: ad.cpl,\n    cpa: ad.cpa,\n    purchases: ad.purchases,\n    roas: ad.roas,\n    revenue: ad.revenue,\n    reach: ad.reach,\n    impressions: ad.impressions,\n    frequency: ad.frequency,\n    desempenho: tags.join(' | ')\n  };\n});\n\nconst filtered = detailed.filter(d => d.desempenho.length > 0);\n\nreturn filtered.map(f => ({ json: f }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        928,
+        48
+      ],
+      "id": "766289b5-4b0d-4034-ba1f-325dbcd4251e",
+      "name": "Outliers Positivos"
+    },
+    {
+      "parameters": {
+        "jsCode": "const input = items[0].json.data;\nconst threshold = parseFloat($node[\"Data\"].json[\"Percentual Outliers Negativos\"]) / 100;\n\nfunction parseNumber(value) {\n  const num = parseFloat(value);\n  return isNaN(num) ? 0 : num;\n}\n\nlet totalSpend = 0;\nlet totalCTR = 0;\nlet totalCPC = 0;\nlet totalROAS = 0;\nlet totalLeads = 0;\nlet totalPurchases = 0;\nlet totalRevenue = 0;\nlet totalCPA = 0;\nlet countCTR = 0;\nlet countCPC = 0;\nlet countROAS = 0;\nlet countCPA = 0;\n\nlet creatives = [];\n\ninput.forEach(ad => {\n  const spend = parseNumber(ad.spend);\n  const ctr = parseNumber(ad.ctr);\n  const cpc = parseNumber(ad.cpc);\n  const frequency = parseNumber(ad.frequency);\n  const reach = parseNumber(ad.reach);\n  const impressions = parseNumber(ad.impressions);\n\n  let leads = 0;\n  let purchases = 0;\n  let revenue = 0;\n\n  ad.actions?.forEach(action => {\n    if (action.action_type === 'lead') leads += parseNumber(action.value);\n    if (action.action_type.includes('purchase')) {\n      purchases += parseNumber(action.value);\n    }\n  });\n\n  ad.purchase_roas?.forEach(roas => {\n    revenue += parseNumber(roas.value);\n  });\n\n  totalSpend += spend;\n  if (ctr > 0) { totalCTR += ctr; countCTR++; }\n  if (cpc > 0) { totalCPC += cpc; countCPC++; }\n  if (revenue > 0 && spend > 0) { totalROAS += revenue / spend; countROAS++; }\n  if (leads > 0) { totalLeads += leads; }\n  if (purchases > 0) { totalPurchases += purchases; }\n\n  let totalConversions = leads + purchases;\n  let cpa = (spend > 0 && totalConversions > 0) ? spend / totalConversions : 0;\n  if (cpa > 0) { totalCPA += cpa; countCPA++; }\n\n  creatives.push({\n    ad_id: ad.ad_id,\n    ad_name: ad.ad_name,\n    adset_name: ad.adset_name,\n    campaign_name: ad.campaign_name,\n    objective: ad.objective,\n    spend,\n    ctr,\n    cpc,\n    frequency,\n    reach,\n    impressions,\n    leads,\n    purchases,\n    revenue,\n    roas: (revenue && spend) ? revenue / spend : 0,\n    cpl: (leads > 0) ? spend / leads : 0,\n    cpa\n  });\n});\n\nconst avgCTR = countCTR ? totalCTR / countCTR : 0;\nconst avgCPC = countCPC ? totalCPC / countCPC : 0;\nconst avgROAS = countROAS ? totalROAS / countROAS : 0;\nconst avgCPL = (totalLeads > 0) ? totalSpend / totalLeads : 0;\nconst avgCPA = countCPA ? totalCPA / countCPA : 0;\n\nfunction evaluate(ad) {\n  let tags = [];\n\n  if (ad.cpa > avgCPA * (1 + threshold)) {\n    const diff = ((ad.cpa - avgCPA) / avgCPA) * 100;\n    tags.push(`⚠️ CPA ${Math.round(diff)}% acima da média (R$${ad.cpa.toFixed(2)} vs R$${avgCPA.toFixed(2)})`);\n  }\n\n  if (ad.objective.includes('LEADS')) {\n    if (ad.cpl > avgCPL * (1 + threshold)) {\n      const diff = ((ad.cpl - avgCPL) / avgCPL) * 100;\n      tags.push(`⚠️ CPL ${Math.round(diff)}% acima da média (R$${ad.cpl.toFixed(2)} vs R$${avgCPL.toFixed(2)})`);\n    }\n  }\n\n  if (ad.objective.includes('SALES')) {\n    if (ad.roas > 0 && ad.roas <= avgROAS * (1 - threshold)) {\n      const diff = ((avgROAS - ad.roas) / avgROAS) * 100;\n      tags.push(`🔻 ROAS ${Math.round(diff)}% abaixo da média (${ad.roas.toFixed(2)} vs ${avgROAS.toFixed(2)})`);\n    }\n  }\n\n  if (ad.ctr > 0 && ad.ctr <= avgCTR * (1 - threshold)) {\n    const diff = ((avgCTR - ad.ctr) / avgCTR) * 100;\n    tags.push(`❄️ CTR ${Math.round(diff)}% abaixo da média (${ad.ctr.toFixed(2)}% vs ${avgCTR.toFixed(2)}%)`);\n  }\n\n  if (ad.cpc > avgCPC * (1 + threshold)) {\n    const diff = ((ad.cpc - avgCPC) / avgCPC) * 100;\n    tags.push(`💸 CPC ${Math.round(diff)}% acima da média (R$${ad.cpc.toFixed(2)} vs R$${avgCPC.toFixed(2)})`);\n  }\n\n  return tags;\n}\n\nconst detailed = creatives.map(ad => {\n  const tags = evaluate(ad);\n  return {\n    ad_name: ad.ad_name,\n    ad_id: ad.ad_id,\n    adset_name: ad.adset_name,\n    campaign_name: ad.campaign_name,\n    objective: ad.objective,\n    spend: ad.spend,\n    ctr: ad.ctr,\n    cpc: ad.cpc,\n    leads: ad.leads,\n    cpl: ad.cpl,\n    cpa: ad.cpa,\n    purchases: ad.purchases,\n    roas: ad.roas,\n    revenue: ad.revenue,\n    reach: ad.reach,\n    impressions: ad.impressions,\n    frequency: ad.frequency,\n    desempenho: tags.join(' | ')\n  };\n});\n\nconst filtered = detailed.filter(d => d.desempenho.length > 0);\n\nreturn filtered.map(f => ({ json: f }));\n"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 1,
+      "position": [
+        928,
+        272
+      ],
+      "id": "18f3a383-7988-4221-8316-24d4e339d332",
+      "name": "Outliers Negativos"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $node[\"Data\"].json[\"ID Sheets Ranking de Criativos\"] }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": 0,
+          "mode": "list",
+          "cachedResultName": "Top",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "ad_id"
+          ],
+          "schema": [
+            {
+              "id": "desempenho",
+              "displayName": "desempenho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ad_name",
+              "displayName": "ad_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "spend",
+              "displayName": "spend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ctr",
+              "displayName": "ctr",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cpc",
+              "displayName": "cpc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "leads",
+              "displayName": "leads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cpl",
+              "displayName": "cpl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "purchases",
+              "displayName": "purchases",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "roas",
+              "displayName": "roas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "revenue",
+              "displayName": "revenue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reach",
+              "displayName": "reach",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "frequency",
+              "displayName": "frequency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "impressions",
+              "displayName": "impressions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cpa",
+              "displayName": "cpa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ad_id",
+              "displayName": "ad_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "adset_name",
+              "displayName": "adset_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "campaign_name",
+              "displayName": "campaign_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "tipo",
+              "displayName": "tipo",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "creative title",
+              "displayName": "creative title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "creative body",
+              "displayName": "creative body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cta type",
+              "displayName": "cta type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url cta",
+              "displayName": "url cta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url media",
+              "displayName": "url media",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url instagram",
+              "displayName": "url instagram",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_time",
+              "displayName": "created_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "transcription",
+              "displayName": "transcription",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "adset_id",
+              "displayName": "adset_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "campaign_id",
+              "displayName": "campaign_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "checked",
+              "displayName": "checked",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        48
+      ],
+      "id": "c165ba78-0cf7-4f4e-a740-1a7353f88f12",
+      "name": "Append/Update Positivos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "[Google Sheets] - Aiosphere"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $node[\"Data\"].json[\"ID Sheets Ranking de Criativos\"] }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "={{SHEET_ID_PIORES}}",
+          "mode": "list",
+          "cachedResultName": "Piores",
+          "cachedResultUrl": ""
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "ad_id"
+          ],
+          "schema": [
+            {
+              "id": "desempenho",
+              "displayName": "desempenho",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ad_name",
+              "displayName": "ad_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "spend",
+              "displayName": "spend",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ctr",
+              "displayName": "ctr",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cpc",
+              "displayName": "cpc",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "leads",
+              "displayName": "leads",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cpl",
+              "displayName": "cpl",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "purchases",
+              "displayName": "purchases",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "roas",
+              "displayName": "roas",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "revenue",
+              "displayName": "revenue",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "reach",
+              "displayName": "reach",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "frequency",
+              "displayName": "frequency",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "impressions",
+              "displayName": "impressions",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cpa",
+              "displayName": "cpa",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "ad_id",
+              "displayName": "ad_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "adset_name",
+              "displayName": "adset_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "campaign_name",
+              "displayName": "campaign_name",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "objective",
+              "displayName": "objective",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "creative title",
+              "displayName": "creative title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "creative body",
+              "displayName": "creative body",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "description",
+              "displayName": "description",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "cta type",
+              "displayName": "cta type",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url cta",
+              "displayName": "url cta",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url media",
+              "displayName": "url media",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url instagram",
+              "displayName": "url instagram",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "status",
+              "displayName": "status",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "created_time",
+              "displayName": "created_time",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "transcription",
+              "displayName": "transcription",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "adset_id",
+              "displayName": "adset_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "campaign_id",
+              "displayName": "campaign_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "checked",
+              "displayName": "checked",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [
+        1120,
+        272
+      ],
+      "id": "b0d23647-987e-432a-a892-df79d5b886bb",
+      "name": "Append/Update Negativos",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "",
+          "name": "[Google Sheets] - Aiosphere"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## Anexos\nLink da Planilha: https://docs.google.com/spreadsheets/example"
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "position": [
+        1136,
+        -112
+      ],
+      "typeVersion": 1,
+      "id": "d523f370-0149-4fc6-94bf-e9b2b49733fc",
+      "name": "Sticky Note1"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Schedule Trigger": {
+      "main": [
+        [
+          {
+            "node": "Data",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Metrics": {
+      "main": [
+        [
+          {
+            "node": "Outliers Positivos",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Outliers Negativos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Data": {
+      "main": [
+        [
+          {
+            "node": "Fetch Metrics",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outliers Positivos": {
+      "main": [
+        [
+          {
+            "node": "Append/Update Positivos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Outliers Negativos": {
+      "main": [
+        [
+          {
+            "node": "Append/Update Negativos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "callerPolicy": "workflowsFromSameOwner",
+    "availableInMCP": false,
+    "errorWorkflow": "CeG6eiB4lKILQAq7"
+  },
+  "versionId": "6d4d4a15-1209-430e-8ea1-ef03a9e59b39",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "77e9e70bb3c32331f0dab09a28d0a11345f711e8a40eb851a82709683eb18e1e"
+  },
+  "id": "lLHDqz5FHYC84vJ4",
+  "tags": []
+}
