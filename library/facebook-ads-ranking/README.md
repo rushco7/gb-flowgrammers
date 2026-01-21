@@ -1,20 +1,22 @@
-# 🌊 Flowgrammers Community Library
+# 📊 Facebook Ads Ranking & Análise com IA
 
-Bem-vindo ao repositório oficial de workflows da comunidade **Flowgrammers**. Este repositório centraliza soluções de automação testadas e documentadas, prontas para serem utilizadas no n8n.
+Esta solução automatiza a análise de criativos do Facebook Ads, classificando-os em "Top Performance" ou "Ruins" e gerando insights detalhados com inteligência artificial.
 
-## 📂 Biblioteca de Soluções
+## 🚀 Funcionalidades
+*   **Extração Diária**: Puxa métricas de 8 dias e consolida dados.
+*   **Classificação Automática**: Separa criativos vencedores e perdedores baseados em regras personalizáveis (CPA, ROAS, CTR).
+*   **Análise com IA**: Usa IA para analisar copy, vídeo e imagem dos criativos de destaque.
+*   **Integração Google Sheets**: Tudo é salvo automaticamente em uma planilha organizada.
 
-Todas as contribuições estão organizadas dentro da pasta `library/`. Navegue até a solução desejada para ver a documentação específica e os arquivos de importação.
+## 📂 Arquivos
+*   `workflows/`: Contém os 3 arquivos JSON para importar no n8n.
+*   `docs/MANUAL.md`: **[Manual Completo de Instalação e Uso](./docs/MANUAL.md)** (Crucial ler antes de usar!).
 
-| Solução | Descrição | Autor |
-| :--- | :--- | :--- |
-| **[Facebook Ads Ranking](./library/facebook-ads-ranking)** | Extração de métricas, classificação de criativos e análise com IA. | Gabriel Siqueira |
-
-## 🤝 Como Contribuir
-
-1.  Crie uma nova pasta dentro de `library/` com o nome da sua solução (ex: `whatsapp-crm-bot`).
-2.  Adicione seus workflows (`.json`) e documentação (`README.md`).
-3.  Abra um Pull Request para revisão.
+## 🛠 Requisitos
+*   n8n (Versão recomendada: 1.0+)
+*   Conta de Desenvolvedor Facebook (Graph API)
+*   Conta Google Cloud (Para Sheets API)
+*   OpenAI API Key
 
 ---
-**Flowgrammers** - *Automação Profissional com n8n*
+*Contribuição de Gabriel Siqueira para a comunidade Flowgrammers.*
