@@ -1,6 +1,8 @@
 # 🌊 Flowgrammers Community Library
 
-Bem-vindo ao repositório oficial de workflows da comunidade **Flowgrammers**. Este repositório centraliza soluções de automação testadas e documentadas, prontas para serem utilizadas no n8n.
+Bem-vindo ao repositório de contribuições de **Gabriel Siqueira** para a comunidade **Flowgrammers**. 
+
+Este projeto serve como meu portfólio de soluções e uma forma de disponibilizar versões versionadas dos workflows que compartilho no Drive oficial da comunidade. Aqui você encontra automações testadas e documentadas, prontas para uso.
 
 ## 📂 Biblioteca de Soluções
 
