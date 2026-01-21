@@ -1,8 +1,8 @@
 # 🌊 Flowgrammers Community Library
 
-Bem-vindo ao repositório de contribuições de **Gabriel Siqueira** para a comunidade **Flowgrammers**. 
+Bem-vindo ao repositório de contribuições de **Gabriel Siqueira** para o **Ecossistema Flowgrammers**.
 
-Este projeto serve como meu portfólio de soluções e uma forma de disponibilizar versões versionadas dos workflows que compartilho no Drive oficial da comunidade. Aqui você encontra automações testadas e documentadas, prontas para uso.
+Este projeto serve como meu portfólio de **Agentes de IA** e **Automações de Alta Performance**. Aqui disponibilizo versões versionadas e documentadas das soluções que compartilho no Drive oficial da comunidade.
 
 ## 📂 Biblioteca de Soluções
 
